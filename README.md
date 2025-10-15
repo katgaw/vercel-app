@@ -68,8 +68,18 @@ vercel
 - `fastapi==0.115.0` - Modern web framework
 - `uvicorn==0.32.0` - ASGI server
 - `openai==1.51.0` - OpenAI API client
+- `httpx==0.27.0` - HTTP client (specific version for Vercel compatibility)
+- `httpcore==1.0.5` - HTTP core functionality
 - `python-multipart==0.0.12` - Form data parsing
 - `pydantic==2.9.2` - Data validation
+- `anyio==4.4.0` - Async support
+- `certifi==2024.8.30` - SSL certificates
+- Additional dependencies for stable Vercel deployment
+
+**⚠️ Important Notes**:
+- httpx version 0.27.0 is specifically required to prevent proxy errors on Vercel
+- Custom httpx client with `proxies=None` prevents "unexpected keyword argument 'proxies'" error
+- See [PROXY_ERROR_FIX.md](PROXY_ERROR_FIX.md) and [COMMON_ERRORS.md](COMMON_ERRORS.md) for details
 
 ## 🔒 Security Note
 

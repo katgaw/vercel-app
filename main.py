@@ -25,11 +25,20 @@ async def read_root():
 @app.post("/api/generate-recipe")
 async def generate_recipe(request: RecipeRequest):
     try:
-        # Initialize OpenAI client with user's API key
-        # Set timeout and max_retries for Vercel serverless environment
+        # Create a custom httpx client without proxy configuration
+        # This prevents the 'proxies' parameter error on Vercel
+        http_client = httpx.Client(
+            timeout=60.0,
+            follow_redirects=True,
+            # Explicitly disable proxy detection to avoid conflicts
+            proxies=None
+        )
+        
+        # Initialize OpenAI client with custom http_client
+        # This prevents the "unexpected keyword argument 'proxies'" error
         client = OpenAI(
             api_key=request.api_key,
-            timeout=60.0,
+            http_client=http_client,
             max_retries=2
         )
         
@@ -66,6 +75,9 @@ Keep it simple and easy to make!"""
         
         recipe = response.choices[0].message.content
         
+        # Clean up the http client
+        http_client.close()
+        
         return {
             "success": True,
             "recipe": recipe,
@@ -73,6 +85,9 @@ Keep it simple and easy to make!"""
         }
         
     except Exception as e:
+        # Make sure to close http_client even on error
+        if 'http_client' in locals():
+            http_client.close()
         raise HTTPException(status_code=500, detail=f"Error generating recipe: {str(e)}")
 
 if __name__ == "__main__":

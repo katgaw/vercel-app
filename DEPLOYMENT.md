@@ -66,16 +66,39 @@ The following files are configured for Vercel deployment:
 
 ## 🔧 Important Notes
 
-### httpx Dependency Conflict Fix
+### httpx Dependency Conflict & Proxy Error Fix ⚠️
 
-The `requirements.txt` file includes pinned versions of `httpx` and `httpcore` to prevent dependency conflicts with the OpenAI library on Vercel:
+The `requirements.txt` file includes **specifically tested versions** to prevent proxy errors and dependency conflicts with the OpenAI library on Vercel:
 
 ```txt
-httpx==0.27.2
-httpcore==1.0.6
+httpx==0.27.0        # Critical: This exact version prevents proxy errors
+httpcore==1.0.5      # Must match httpx requirements
+anyio==4.4.0         # Handles async operations in serverless
+sniffio==1.3.1       # Required by anyio
+h11==0.14.0          # HTTP/1.1 protocol support
+certifi==2024.8.30   # SSL certificates (prevents SSL errors)
+idna==3.10           # Internationalized domain name support
 ```
 
-This ensures compatibility between OpenAI SDK and Vercel's serverless environment.
+**DO NOT** change these versions unless testing thoroughly, as they are specifically tuned for Vercel's serverless environment.
+
+### OpenAI Client Configuration
+
+The OpenAI client includes timeout and retry settings optimized for serverless:
+```python
+client = OpenAI(
+    api_key=request.api_key,
+    timeout=60.0,      # Prevents timeout errors
+    max_retries=2      # Automatic retry on transient failures
+)
+```
+
+### Vercel Function Settings
+
+The `vercel.json` configures optimal settings:
+- **Memory**: 1024 MB (sufficient for OpenAI + dependencies)
+- **Max Duration**: 60 seconds (handles longer API calls)
+- **Max Lambda Size**: 15 MB (accommodates all packages)
 
 ### Python Version
 
@@ -92,21 +115,49 @@ Once deployed, your app will be available at your Vercel URL. Users can:
 
 ## 🐛 Troubleshooting
 
+### Proxy Errors ⚠️ (Most Common Issue)
+
+If you see `httpx.ProxyError` or connection errors:
+
+1. **Verify exact dependency versions** in `requirements.txt`:
+   - httpx must be `0.27.0` (not 0.27.2 or newer)
+   - httpcore must be `1.0.5`
+
+2. **Redeploy with clean build**:
+   ```bash
+   vercel --prod --force
+   ```
+
+3. **Check Vercel logs**:
+   ```bash
+   vercel logs <your-deployment-url>
+   ```
+
+See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for detailed proxy error solutions.
+
 ### Deployment Fails
 
 - Check the build logs in Vercel dashboard
 - Ensure all files are committed
 - Verify `vercel.json` configuration
+- Make sure Python version is 3.12 (runtime.txt)
 
 ### Import Errors
 
 - Make sure all dependencies are in `requirements.txt`
 - Check that httpx versions are pinned correctly
+- Verify no typos in package names
+
+### Timeout Errors
+
+- OpenAI timeout is set to 60 seconds
+- Vercel max duration is 60 seconds
+- If still timing out, check OpenAI API status
 
 ### Static Files Not Loading
 
 - Verify the `static` directory is included in your deployment
-- Check the path resolution in `main.py`
+- Check the path resolution in `main.py` uses `Path(__file__).parent`
 
 ## 📊 Monitoring
 
