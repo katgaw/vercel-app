@@ -15,10 +15,10 @@ A beautiful and simple FastAPI application that generates personalized dinner re
 
 ### Prerequisites
 
-- Python 3.13
+- Python 3.12+ (tested with Python 3.13)
 - OpenAI API Key ([Get one here](https://platform.openai.com/api-keys))
 
-### Installation
+### Local Development
 
 1. Install the required dependencies:
 
@@ -42,6 +42,15 @@ uvicorn main:app --reload
 
 ```
 http://localhost:8000
+```
+
+### Deploy to Vercel
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed Vercel deployment instructions.
+
+Quick deploy:
+```bash
+vercel
 ```
 
 ## 🎯 How to Use

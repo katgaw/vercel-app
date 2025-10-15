@@ -1,11 +1,15 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from openai import OpenAI
 import os
+from pathlib import Path
+import httpx
 
 app = FastAPI(title="Diet Recipe Generator")
+
+# Verify httpx is properly imported (helps with Vercel deployment)
+print(f"httpx version: {httpx.__version__}")
 
 class RecipeRequest(BaseModel):
     diet_type: str
@@ -13,14 +17,21 @@ class RecipeRequest(BaseModel):
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
-    with open("static/index.html", "r") as f:
+    # Handle both local and Vercel deployment paths
+    html_path = Path(__file__).parent / "static" / "index.html"
+    with open(html_path, "r") as f:
         return f.read()
 
 @app.post("/api/generate-recipe")
 async def generate_recipe(request: RecipeRequest):
     try:
         # Initialize OpenAI client with user's API key
-        client = OpenAI(api_key=request.api_key)
+        # Set timeout and max_retries for Vercel serverless environment
+        client = OpenAI(
+            api_key=request.api_key,
+            timeout=60.0,
+            max_retries=2
+        )
         
         # Create prompt based on diet type
         diet_prompts = {
